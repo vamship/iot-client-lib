@@ -15,8 +15,7 @@
   "dependencies": {
     "clone": "^1.0.2",
     "q": "^1.4.1",
-    "rc": "^1.1.1",
-    "winston": "^0.8.3"
+    "rc": "^1.1.1"
   },
   "devDependencies": {
     "chai": "^1.9.2",
