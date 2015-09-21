@@ -12,8 +12,10 @@ var _index = require('../../lib/index');
 describe('index', function() {
     it('should expose the expected methods and properties', function() {
         expect(_index).to.be.an('object');
-        expect(_index).to.have.property('Connector').and.to.be.a('function');
         expect(_index).to.have.property('Controller').and.to.be.a('function');
         expect(_index).to.have.property('connectorFactory').and.to.be.an('object');
+
+        expect(_index).to.have.property('Connector').and.to.be.a('function');
+        expect(_index).to.have.property('PollingConnector').and.to.be.a('function');
     });
 });
