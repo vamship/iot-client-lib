@@ -24,7 +24,7 @@ describe('connectorFactory', function() {
             'temperature': TempSensorConnector,
             'humidity': HumiditySensorConnector
         };
-    };
+    }
 
     describe('[init]', function() {
         it('should expose the required methods and properties', function() {

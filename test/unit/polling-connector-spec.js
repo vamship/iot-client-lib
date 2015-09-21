@@ -25,7 +25,7 @@ describe('Connector', function() {
         return function() {
             expect(spy.callCount).to.equal(count);
         };
-    };
+    }
 
     describe('ctor()', function() {
         it('should throw an error if invoked without a valid id', function() {
@@ -33,7 +33,7 @@ describe('Connector', function() {
 
             function invokeMethod(id) {
                 return function() {
-                    new Connector(id);
+                    return new Connector(id);
                 };
             }
 

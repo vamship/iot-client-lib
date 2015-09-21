@@ -2,9 +2,8 @@
   "name": "iot-client-lib",
   "version": "1.0.0",
   "description": "Library for IOT client (gateway) devices",
-  "main": "app/index.js",
+  "main": "lib/index.js",
   "scripts": {
-    "dev": "node app/index.js",
     "test": "grunt"
   },
   "keywords": [

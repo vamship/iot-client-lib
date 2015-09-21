@@ -47,7 +47,7 @@ describe('Connector', function() {
 
             function invokeMethod(id) {
                 return function() {
-                    new Connector(id);
+                    return new Connector(id);
                 };
             }
 
@@ -236,7 +236,7 @@ describe('Connector', function() {
                     con.init({});
                     con.addData(data);
                 };
-            };
+            }
 
             expect(invokeMethod()).to.throw(error);
             expect(invokeMethod(null)).to.throw(error);
