@@ -358,6 +358,42 @@ describe('Controller', function() {
                       _assertionHelper.getNotifyFailureHandler(done));
         });
 
+        it('should prefix the module path with a base path, if the type module is specified as a relative path', function(done) {
+            var mockConnectorFactory = _createMockConnectorFactory();
+            Controller.__set__('_connectorFactory', mockConnectorFactory);
+
+            var mockConfig = _createConfig(0, 'resolve');
+
+            for(var moduleName in mockConfig.config.connectorTypes) {
+                var path = mockConfig.config.connectorTypes[moduleName];
+                mockConfig.config.connectorTypes[moduleName] = path.replace('./tmp','');
+            }
+
+            var doTests = function() {
+                expect(mockConnectorFactory.init).to.have.been.calledOnce;
+                var initArg = mockConnectorFactory.init.args[0][0];
+                expect(initArg).to.be.an('object');
+                expect(initArg).to.have.keys(Object.keys(mockConfig.config.connectorTypes));
+                for(var key in initArg) {
+                    var connectorDefinition = initArg[key];
+                    var expectedDefinition = mockConfig.getConnectorDefinition(key);
+                    expect(connectorDefinition).to.equal(expectedDefinition);
+                }
+            };
+
+            expect(mockConnectorFactory.init).to.not.have.been.called;
+            var configFilePath = _initConfig(mockConfig.config);
+            var ctrl = new Controller({
+                moduleBasePath: './tmp'
+            });
+            var ret = ctrl.init(configFilePath);
+
+            expect(ret).to.be.fulfilled
+                .then(doTests)
+                .then(_assertionHelper.getNotifySuccessHandler(done),
+                      _assertionHelper.getNotifyFailureHandler(done));
+        });
+
         it('should create and init cloud connectors based on the cloud connector information in the config', function(done) {
             var mockConfig = _createConfig(2, 'resolve');
 
