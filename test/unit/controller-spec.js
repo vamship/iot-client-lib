@@ -961,6 +961,9 @@ describe('Controller', function() {
     });
 
     describe('[events]', function() {
+        var UPDATE_CONFIG_ACTION = 'update_config';
+        var SEND_DATA_ACTION = 'send_data';
+
         function _initDeviceArray(mockConfig) {
             var devices = [ ];
             mockConfig.deviceConnectorIds.forEach(function(id) {
@@ -968,6 +971,9 @@ describe('Controller', function() {
                     id: id,
                     config: {
                         sampleFrequency: 20
+                    },
+                    data: {
+                        value: '1234'
                     },
                     connector: mockConfig.getConnectorById('device', id)
                 });
@@ -996,19 +1002,38 @@ describe('Controller', function() {
                 var payload = {};
                 devices.forEach(function(device) {
                     payload[device.id] = {
-                        action: action,
-                        config: device.config
+                        action: action
                     };
+                    switch(action) {
+                        case UPDATE_CONFIG_ACTION:
+                            payload[device.id].config = device.config;
+                            break;
+                        case SEND_DATA_ACTION:
+                            payload[device.id].data = device.data;
+                            break;
+                        default:
+                            throw new Error('Unrecognized action: ' + action);
+
+                    }
                 });
                 connector._emitData(payload);
                 return data;
             };
         }
 
-        function _checkCallCount(devices, count) {
+        function _checkInitCallCount(devices, count) {
             return function(data) {
                 devices.forEach(function(deviceInfo) {
                     expect(deviceInfo.connector.init.callCount).to.equal(count);
+                });
+                return data;
+            }
+        }
+
+        function _checkAddDataCount(devices, count) {
+            return function(data) {
+                devices.forEach(function(deviceInfo) {
+                    expect(deviceInfo.connector.addData.callCount).to.equal(count);
                 });
                 return data;
             }
@@ -1073,31 +1098,31 @@ describe('Controller', function() {
                 .then(_resetInitSpy(devices))
                 .then(_emitRawData(cloudConnector, undefined))
                 .then(_assertionHelper.wait(10))
-                .then(_checkCallCount(devices, 0))
+                .then(_checkInitCallCount(devices, 0))
 
                 .then(_emitRawData(cloudConnector, null))
                 .then(_assertionHelper.wait(10))
-                .then(_checkCallCount(devices, 0))
+                .then(_checkInitCallCount(devices, 0))
 
                 .then(_emitRawData(cloudConnector, 123))
                 .then(_assertionHelper.wait(10))
-                .then(_checkCallCount(devices, 0))
+                .then(_checkInitCallCount(devices, 0))
 
                 .then(_emitRawData(cloudConnector, 'foo'))
                 .then(_assertionHelper.wait(10))
-                .then(_checkCallCount(devices, 0))
+                .then(_checkInitCallCount(devices, 0))
 
                 .then(_emitRawData(cloudConnector, true))
                 .then(_assertionHelper.wait(10))
-                .then(_checkCallCount(devices, 0))
+                .then(_checkInitCallCount(devices, 0))
 
                 .then(_emitRawData(cloudConnector, function() {}))
                 .then(_assertionHelper.wait(10))
-                .then(_checkCallCount(devices, 0))
+                .then(_checkInitCallCount(devices, 0))
 
                 .then(_emitRawData(cloudConnector, []))
                 .then(_assertionHelper.wait(10))
-                .then(_checkCallCount(devices, 0))
+                .then(_checkInitCallCount(devices, 0))
 
                 .then(_assertionHelper.getNotifySuccessHandler(done),
                       _assertionHelper.getNotifyFailureHandler(done));
@@ -1122,7 +1147,7 @@ describe('Controller', function() {
                 .then(_resetInitSpy(devices))
                 .then(_emitRawData(cloudConnector, payload))
                 .then(_assertionHelper.wait(10))
-                .then(_checkCallCount(devices, 0))
+                .then(_checkInitCallCount(devices, 0))
                 .then(_assertionHelper.getNotifySuccessHandler(done),
                       _assertionHelper.getNotifyFailureHandler(done));
         });
@@ -1148,7 +1173,50 @@ describe('Controller', function() {
                 .then(_resetInitSpy(devices))
                 .then(_emitRawData(cloudConnector, payload))
                 .then(_assertionHelper.wait(10))
-                .then(_checkCallCount(devices, 0))
+                .then(_checkInitCallCount(devices, 0))
+                .then(_assertionHelper.getNotifySuccessHandler(done),
+                      _assertionHelper.getNotifyFailureHandler(done));
+        });
+
+        it('should ignore send data requests to unrecognized device connectors', function(done) {
+            var mockConfig = _createConfig(1, 'resolve', 'resolve');
+            var configFilePath = _initConfig(mockConfig.config);
+            var ctrl = new Controller();
+
+            var cloudConnector = mockConfig.getConnectorById('cloud',
+                                               mockConfig.cloudConnectorIds[0]);
+            var devices = _initDeviceArray(mockConfig);
+            var badDevices = [
+                { id: 'bad1', data: 'does not matter' },
+                { id: 'bad2', data: 'does not matter' },
+                { id: 'bad3', data: 'does not matter' },
+            ];
+
+            expect(ctrl.init(configFilePath)).to.be.fulfilled
+                .then(_resetInitSpy(devices))
+                .then(_checkAddDataCount(devices, 0))
+                .then(_emitDataEvent(cloudConnector, SEND_DATA_ACTION, badDevices))
+                .then(_assertionHelper.wait(10))
+                .then(_checkAddDataCount(devices, 0))
+                .then(_assertionHelper.getNotifySuccessHandler(done),
+                      _assertionHelper.getNotifyFailureHandler(done));
+        });
+
+        it('should add data to specific device connector buffers when the cloud connector sends a data packet', function(done) {
+            var mockConfig = _createConfig(1, 'resolve', 'resolve');
+            var configFilePath = _initConfig(mockConfig.config);
+            var ctrl = new Controller();
+
+            var cloudConnector = mockConfig.getConnectorById('cloud',
+                                               mockConfig.cloudConnectorIds[0]);
+            var devices = _initDeviceArray(mockConfig);
+
+            expect(ctrl.init(configFilePath)).to.be.fulfilled
+                .then(_resetInitSpy(devices))
+                .then(_checkAddDataCount(devices, 0))
+                .then(_emitDataEvent(cloudConnector, SEND_DATA_ACTION, devices))
+                .then(_assertionHelper.wait(10))
+                .then(_checkAddDataCount(devices, 1))
                 .then(_assertionHelper.getNotifySuccessHandler(done),
                       _assertionHelper.getNotifyFailureHandler(done));
         });
@@ -1164,9 +1232,9 @@ describe('Controller', function() {
 
             expect(ctrl.init(configFilePath)).to.be.fulfilled
                 .then(_resetInitSpy(devices))
-                .then(_emitDataEvent(cloudConnector, 'update', devices))
+                .then(_emitDataEvent(cloudConnector, UPDATE_CONFIG_ACTION, devices))
                 .then(_assertionHelper.wait(10))
-                .then(_checkCallCount(devices, 1))
+                .then(_checkInitCallCount(devices, 1))
                 .then(_assertionHelper.getNotifySuccessHandler(done),
                       _assertionHelper.getNotifyFailureHandler(done));
         });
@@ -1207,9 +1275,9 @@ describe('Controller', function() {
 
             expect(ret).to.be.fulfilled
                 .then(checkCallCount(1))
-                .then(_emitDataEvent(cloudConnector, 'update', devices))
-                .then(_emitDataEvent(cloudConnector, 'update', devices))
-                .then(_emitDataEvent(cloudConnector, 'update', devices))
+                .then(_emitDataEvent(cloudConnector, UPDATE_CONFIG_ACTION, devices))
+                .then(_emitDataEvent(cloudConnector, UPDATE_CONFIG_ACTION, devices))
+                .then(_emitDataEvent(cloudConnector, UPDATE_CONFIG_ACTION, devices))
                 .then(_assertionHelper.wait(10))
                 .then(checkCallCount(2))
 
@@ -1250,7 +1318,7 @@ describe('Controller', function() {
 
             expect(ctrl.init(configFilePath)).to.be.fulfilled
                 .then(_resetInitSpy(devices))
-                .then(_emitDataEvent(cloudConnector, 'update', devices))
+                .then(_emitDataEvent(cloudConnector, UPDATE_CONFIG_ACTION, devices))
                 .then(_assertionHelper.wait(10))
                 .then(doTests)
                 .then(_assertionHelper.getNotifySuccessHandler(done),
@@ -1277,8 +1345,8 @@ describe('Controller', function() {
 
             expect(ctrl.init(configFilePath)).to.be.fulfilled
                 .then(_resetInitSpy(devices))
-                .then(_emitDataEvent(cloudConnector, 'update', devices))
-                .then(_emitDataEvent(cloudConnector, 'update', devices))
+                .then(_emitDataEvent(cloudConnector, UPDATE_CONFIG_ACTION, devices))
+                .then(_emitDataEvent(cloudConnector, UPDATE_CONFIG_ACTION, devices))
                 .then(_assertionHelper.wait(10))
                 .then(checkCallCount(1))
                 .then(mockFs._completeDeferred.bind(mockFs, 0, true))
@@ -1308,8 +1376,8 @@ describe('Controller', function() {
 
             expect(ctrl.init(configFilePath)).to.be.fulfilled
                 .then(_resetInitSpy(devices))
-                .then(_emitDataEvent(cloudConnector, 'update', devices))
-                .then(_emitDataEvent(cloudConnector, 'update', devices))
+                .then(_emitDataEvent(cloudConnector, UPDATE_CONFIG_ACTION, devices))
+                .then(_emitDataEvent(cloudConnector, UPDATE_CONFIG_ACTION, devices))
                 .then(_assertionHelper.wait(10))
                 .then(checkCallCount(1))
                 .then(mockFs._completeDeferred.bind(mockFs, 0, false))
