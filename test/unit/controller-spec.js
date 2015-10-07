@@ -224,6 +224,15 @@ describe('Controller', function() {
             expect(ctrl).to.have.property('getDeviceConnectors').and.to.be.a('function');
         });
 
+        it('should create a new logger object using the logger provider, if one was specified', function() {
+            var provider = {
+                getLogger: _sinon.spy()
+            };
+            var ctrl = new Controller(null, provider);
+            expect(provider.getLogger).to.have.been.calledOnce;
+            expect(provider.getLogger).to.have.been.calledWith('controller');
+        });
+
         it('should default the controller to an inactive state', function() {
             var ctrl = new Controller();
 
