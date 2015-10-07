@@ -62,11 +62,11 @@ describe('connectorFactory', function() {
             }
 
             expect(invokeMethod()).to.not.throw();
-
         });
     });
 
     describe('createConnector()', function() {
+
         it('should throw an error if invoked without a valid connector type', function() {
             var error = 'Invalid connector type specified (arg #1)';
 
@@ -148,6 +148,41 @@ describe('connectorFactory', function() {
                 var connector = connectorFactory.createConnector(name, id);
                 expect(type.args[0][0]).to.equal(id);
             }
+        });
+
+        it('should create a new logger instance using the logger provider if a provider is specified at init', function() {
+            var config = _createConnectorConfig();
+            var provider = {
+                getLogger: _sinon.spy() 
+            };
+
+            connectorFactory.init(config, provider);
+
+            expect(provider.getLogger).to.not.have.been.called;
+            var connectorId = 'cloud_id';
+            var connector = connectorFactory.createConnector('cloud', connectorId);
+            expect(provider.getLogger).to.have.been.called.once;
+            expect(provider.getLogger).to.have.been.calledWith(connectorId);
+        });
+
+        it('should attach the logger instance to the connector instance if a provider is specified at init', function() {
+            var logger = {};
+            var config = {
+                'connector': function() {
+                    this.setLogger = _sinon.spy();
+                }
+            };
+            var provider = {
+                getLogger: function(id) {
+                    return logger;
+                }
+            };
+
+            connectorFactory.init(config, provider);
+
+            var connector = connectorFactory.createConnector('connector', 'connector_id');
+            expect(connector.setLogger).to.have.been.called.once;
+            expect(connector.setLogger).to.have.been.calledWith(logger);
         });
     });
 });

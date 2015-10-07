@@ -16,7 +16,7 @@ var EventEmitter = require('events').EventEmitter;
 describe('Connector', function() {
 
     function _createConnector(id) {
-        id = id || 'foo';
+        id = id || 'connector_id';
         return new Connector(id);
     }
 
@@ -72,6 +72,20 @@ describe('Connector', function() {
             expect(con).to.have.property('isActive').and.to.be.a('function');
             expect(con).to.have.property('addData').and.to.be.a('function');
             expect(con).to.have.property('stop').and.to.be.a('function');
+            expect(con).to.have.property('setLogger').and.to.be.a('function');
+
+            expect(con).to.have.property('_logger').and.to.be.an('object');
+            expect(con._logger).to.have.property('silly').and.to.be.a('function');
+            expect(con._logger).to.have.property('debug').and.to.be.a('function');
+            expect(con._logger).to.have.property('verbose').and.to.be.a('function');
+            expect(con._logger).to.have.property('info').and.to.be.a('function');
+            expect(con._logger).to.have.property('warn').and.to.be.a('function');
+            expect(con._logger).to.have.property('error').and.to.be.a('function');
+
+            //NOTE: Calling to ensure code coverage. There is no other practical
+            //function to this.
+            con._logger.silly();
+
         });
 
         it('should set the active flag to false when initialized', function() {
@@ -87,6 +101,70 @@ describe('Connector', function() {
             var con = _createConnector(id);
 
             expect(con.getId()).to.equal(id);
+        });
+    });
+
+    describe('setLogger()', function() {
+        it('should do nothing if a valid logger object is not passed', function() {
+            function doTest(logger) {
+                var con = _createConnector();
+                var oldLogger = con._logger;
+                con.setLogger(logger);
+                expect(con._logger).to.equal(oldLogger);
+            }
+
+            doTest();
+            doTest(null);
+            doTest(123);
+            doTest('abc');
+            doTest(true);
+            doTest(function() {});
+        });
+
+        it('should set the logger reference of the connector to the specified logger if a valid object is passed', function() {
+            function doTest(logger) {
+                var con = _createConnector();
+
+                expect(con._logger).to.not.equal(logger);
+                con.setLogger(logger);
+                expect(con._logger).to.equal(logger);
+            }
+
+            doTest([]);
+            doTest({});
+        });
+
+        it('should polyfill missing methods on the specified logger', function() {
+            var logger = { };
+            var con = _createConnector();
+
+            con.setLogger(logger);
+            expect(con._logger).to.have.property('silly').and.to.be.a('function');
+            expect(con._logger).to.have.property('debug').and.to.be.a('function');
+            expect(con._logger).to.have.property('verbose').and.to.be.a('function');
+            expect(con._logger).to.have.property('info').and.to.be.a('function');
+            expect(con._logger).to.have.property('warn').and.to.be.a('function');
+            expect(con._logger).to.have.property('error').and.to.be.a('function');
+        });
+
+        it('should not replace existing methods on the logger with polyfills', function() {
+            var spy = _sinon.spy();
+            var logger = {
+                silly: spy,
+                debug: 123,
+                verbose: null,
+                info: 'abc',
+                warn: spy,
+            };
+
+            var con = _createConnector();
+            con.setLogger(logger);
+            expect(con._logger.silly).to.equal(spy);
+            expect(con._logger).to.have.property('debug').and.to.be.a('function');
+            expect(con._logger).to.have.property('verbose').and.to.be.a('function');
+            expect(con._logger).to.have.property('info').and.to.be.a('function');
+            expect(con._logger.warn).to.equal(spy);
+            expect(con._logger).to.have.property('error').and.to.be.a('function');
         });
     });
 
