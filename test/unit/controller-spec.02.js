@@ -44,6 +44,9 @@ describe('Controller (2)', function() {
         var RESTART_ALL_CONNECTORS_ACTION = 'restart_all_connectors';
 
         var SHUTDOWN_ACTION = 'shutdown_program';
+        var UPGRADE_ACTION = 'upgrade_program';
+
+        var ADMIN_ACTION_EVENT = 'admin-action';
 
         function _unexpectedResolution(message) {
             message = 'A promise was resolved, when failure was expected. Additional Info: ' +
@@ -295,7 +298,6 @@ describe('Controller (2)', function() {
                     value: Math.random() * 10
                 };
 
-                ctrl.__debug = true;
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
                     .then(function() { ctrl._stopConnector('cloud', cloud1Id); })
                     .then(_assertionHelper.wait(10))
@@ -1012,7 +1014,7 @@ describe('Controller (2)', function() {
                     category: 'device'
                 }];
                 var cloudPayload = [{
-                    action: RESTART_ALL_CONNECTORS_ACTION,
+                    action: STOP_ALL_CONNECTORS_ACTION,
                     category: 'cloud'
                 }];
 
@@ -1847,6 +1849,224 @@ describe('Controller (2)', function() {
                     .then(mockFs._completeDeferred.bind(mockFs, 0, false))
                     .then(_assertionHelper.wait(500))
                     .then(checkCallCount(2))
+                    .then(_assertionHelper.getNotifySuccessHandler(done),
+                          _assertionHelper.getNotifyFailureHandler(done));
+            });
+        });
+
+        describe('[cloud -> device (shutdown program)]', function() {
+
+            it('should stop all connectors when the shutdown command is received', function(done) {
+                var mockConfig = _ctrlUtil.createConfig(1, 'resolve', 'resolve');
+                var configFilePath = _ctrlUtil.initConfig(mockConfig.config);
+                var ctrl = new Controller();
+
+                var emitterId = mockConfig.cloudConnectorIds[0];
+                var emitterConnector = mockConfig.getConnectorById('cloud', emitterId);
+                var connectors = _initConnectorArray(mockConfig, null);
+                var payload = [ {
+                    action: SHUTDOWN_ACTION
+                } ];
+
+                expect(ctrl.init(configFilePath)).to.be.fulfilled
+                    .then(_resetInitSpy(connectors))
+                    .then(_checkCallCount('stop', connectors, 0))
+                    .then(_emitRawData(emitterConnector, payload))
+                    .then(_assertionHelper.wait(10))
+                    .then(_checkCallCount('stop', connectors, 1))
+                    .then(_assertionHelper.getNotifySuccessHandler(done),
+                          _assertionHelper.getNotifyFailureHandler(done));
+            });
+
+            it('should not allow the initialization of connectors while a shutdown is in progress', function(done) {
+                var mockConfig = _ctrlUtil.createConfig(1);
+                var configFilePath = _ctrlUtil.initConfig(mockConfig.config);
+                var ctrl = new Controller();
+
+                var emitterId = mockConfig.cloudConnectorIds[0];
+                var emitterConnector = mockConfig.getConnectorById('cloud', emitterId);
+                var connectors = _initConnectorArray(mockConfig, null);
+                var shutdownPayload = [ {
+                    action: SHUTDOWN_ACTION
+                } ];
+                var startAllPayload = [ {
+                    action: START_ALL_CONNECTORS_ACTION
+                } ];
+
+                var ret = ctrl.init(configFilePath);
+                setTimeout(function() {
+                    _completeDeferred(connectors, 'init', 0, true)();
+                }, 10);
+
+                expect(ret).to.be.fulfilled
+                    .then(_emitRawData(emitterConnector, shutdownPayload))
+                    .then(_emitRawData(emitterConnector, startAllPayload))
+                    .then(_assertionHelper.wait(10))
+
+                    .then(_completeDeferred(connectors, 'stop', 0, true))
+                    .then(_assertionHelper.wait(10))
+                    .then(_checkCallCount('init', connectors, 1))
+
+                    .then(_assertionHelper.getNotifySuccessHandler(done),
+                          _assertionHelper.getNotifyFailureHandler(done));
+            });
+
+            it('should emit an "admin-action" event indicating the shutdown when a shutdown command is received', function(done) {
+                var mockConfig = _ctrlUtil.createConfig(1, 'resolve', 'resolve');
+                var configFilePath = _ctrlUtil.initConfig(mockConfig.config);
+                var ctrl = new Controller();
+
+                var emitterId = mockConfig.cloudConnectorIds[0];
+                var emitterConnector = mockConfig.getConnectorById('cloud', emitterId);
+                var connectors = _initConnectorArray(mockConfig, null);
+                var payload = [ {
+                    action: SHUTDOWN_ACTION
+                } ];
+
+                var handlerSpy = _sinon.spy();
+                ctrl.on(ADMIN_ACTION_EVENT, handlerSpy);
+
+                var doTests = function(data) {
+                    expect(handlerSpy).to.have.been.calledOnce;
+                    expect(handlerSpy.args[0][0]).to.equal(SHUTDOWN_ACTION);
+                    return data;
+                }
+
+                expect(ctrl.init(configFilePath)).to.be.fulfilled
+                    .then(_emitRawData(emitterConnector, payload))
+                    .then(_assertionHelper.wait(10))
+                    .then(doTests)
+                    .then(_assertionHelper.getNotifySuccessHandler(done),
+                          _assertionHelper.getNotifyFailureHandler(done));
+            });
+
+            it('should not write the configuration to the file system after command execution', function(done) {
+                var mockFs = _ctrlUtil.createMockFs();
+                Controller.__set__('_fs', mockFs);
+
+                var mockConfig = _ctrlUtil.createConfig(1, 'resolve', 'resolve');
+                var configFilePath = _ctrlUtil.initConfig(mockConfig.config);
+                var ctrl = new Controller();
+
+                var emitterId = mockConfig.cloudConnectorIds[0];
+                var emitterConnector = mockConfig.getConnectorById('cloud', emitterId);
+                var connectors = _initConnectorArray(mockConfig, emitterId);
+
+                expect(ctrl.init(configFilePath)).to.be.fulfilled
+                    .then(_resetInitSpy(connectors))
+                    .then(_checkConfigFileWrite(mockFs, false))
+                    .then(_emitDataEvent(emitterConnector, SHUTDOWN_ACTION, connectors))
+                    .then(_assertionHelper.wait(10))
+                    .then(_checkConfigFileWrite(mockFs, false))
+                    .then(_assertionHelper.getNotifySuccessHandler(done),
+                          _assertionHelper.getNotifyFailureHandler(done));
+            });
+        });
+
+        describe('[cloud -> device (upgrade program)]', function() {
+
+            it('should stop all connectors when the upgrade command is received', function(done) {
+                var mockConfig = _ctrlUtil.createConfig(1, 'resolve', 'resolve');
+                var configFilePath = _ctrlUtil.initConfig(mockConfig.config);
+                var ctrl = new Controller();
+
+                var emitterId = mockConfig.cloudConnectorIds[0];
+                var emitterConnector = mockConfig.getConnectorById('cloud', emitterId);
+                var connectors = _initConnectorArray(mockConfig, null);
+                var payload = [ {
+                    action: UPGRADE_ACTION
+                } ];
+
+                expect(ctrl.init(configFilePath)).to.be.fulfilled
+                    .then(_resetInitSpy(connectors))
+                    .then(_checkCallCount('stop', connectors, 0))
+                    .then(_emitRawData(emitterConnector, payload))
+                    .then(_assertionHelper.wait(10))
+                    .then(_checkCallCount('stop', connectors, 1))
+                    .then(_assertionHelper.getNotifySuccessHandler(done),
+                          _assertionHelper.getNotifyFailureHandler(done));
+            });
+
+            it('should not allow the initialization of connectors while a upgrade is in progress', function(done) {
+                var mockConfig = _ctrlUtil.createConfig(1);
+                var configFilePath = _ctrlUtil.initConfig(mockConfig.config);
+                var ctrl = new Controller();
+
+                var emitterId = mockConfig.cloudConnectorIds[0];
+                var emitterConnector = mockConfig.getConnectorById('cloud', emitterId);
+                var connectors = _initConnectorArray(mockConfig, null);
+                var upgradePayload = [ {
+                    action: UPGRADE_ACTION
+                } ];
+                var startAllPayload = [ {
+                    action: START_ALL_CONNECTORS_ACTION
+                } ];
+
+                var ret = ctrl.init(configFilePath);
+                setTimeout(function() {
+                    _completeDeferred(connectors, 'init', 0, true)();
+                }, 10);
+
+                expect(ret).to.be.fulfilled
+                    .then(_emitRawData(emitterConnector, upgradePayload))
+                    .then(_emitRawData(emitterConnector, startAllPayload))
+                    .then(_assertionHelper.wait(10))
+
+                    .then(_completeDeferred(connectors, 'stop', 0, true))
+                    .then(_assertionHelper.wait(10))
+                    .then(_checkCallCount('init', connectors, 1))
+
+                    .then(_assertionHelper.getNotifySuccessHandler(done),
+                          _assertionHelper.getNotifyFailureHandler(done));
+            });
+
+            it('should emit an "admin-action" event indicating the upgrade when a upgrade command is received', function(done) {
+                var mockConfig = _ctrlUtil.createConfig(1, 'resolve', 'resolve');
+                var configFilePath = _ctrlUtil.initConfig(mockConfig.config);
+                var ctrl = new Controller();
+
+                var emitterId = mockConfig.cloudConnectorIds[0];
+                var emitterConnector = mockConfig.getConnectorById('cloud', emitterId);
+                var connectors = _initConnectorArray(mockConfig, null);
+                var payload = [ {
+                    action: UPGRADE_ACTION
+                } ];
+
+                var handlerSpy = _sinon.spy();
+                ctrl.on(ADMIN_ACTION_EVENT, handlerSpy);
+
+                var doTests = function(data) {
+                    expect(handlerSpy).to.have.been.calledOnce;
+                    expect(handlerSpy.args[0][0]).to.equal(UPGRADE_ACTION);
+                    return data;
+                }
+
+                expect(ctrl.init(configFilePath)).to.be.fulfilled
+                    .then(_emitRawData(emitterConnector, payload))
+                    .then(_assertionHelper.wait(10))
+                    .then(doTests)
+                    .then(_assertionHelper.getNotifySuccessHandler(done),
+                          _assertionHelper.getNotifyFailureHandler(done));
+            });
+
+            it('should not write the configuration to the file system after command execution', function(done) {
+                var mockFs = _ctrlUtil.createMockFs();
+                Controller.__set__('_fs', mockFs);
+
+                var mockConfig = _ctrlUtil.createConfig(1, 'resolve', 'resolve');
+                var configFilePath = _ctrlUtil.initConfig(mockConfig.config);
+                var ctrl = new Controller();
+
+                var emitterId = mockConfig.cloudConnectorIds[0];
+                var emitterConnector = mockConfig.getConnectorById('cloud', emitterId);
+                var connectors = _initConnectorArray(mockConfig, emitterId);
+
+                expect(ctrl.init(configFilePath)).to.be.fulfilled
+                    .then(_resetInitSpy(connectors))
+                    .then(_checkConfigFileWrite(mockFs, false))
+                    .then(_emitDataEvent(emitterConnector, UPGRADE_ACTION, connectors))
+                    .then(_assertionHelper.wait(10))
+                    .then(_checkConfigFileWrite(mockFs, false))
                     .then(_assertionHelper.getNotifySuccessHandler(done),
                           _assertionHelper.getNotifyFailureHandler(done));
             });
