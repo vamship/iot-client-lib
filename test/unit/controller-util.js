@@ -11,7 +11,7 @@ var _q = require('q');
 var _path = require('path');
 var _wfs = require('wysknd-test').fs;
 
-var TEMP_DIR = './tmp';
+var TEMP_DIR = './.tmp';
 var _filesToCleanup = [];
 var DEFAULT_CONFIG = {
     connectorTypes: { },
