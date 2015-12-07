@@ -196,7 +196,7 @@ describe('Controller (1)', function() {
 
             for(var moduleName in mockConfig.config.connectorTypes) {
                 var path = mockConfig.config.connectorTypes[moduleName];
-                mockConfig.config.connectorTypes[moduleName] = path.replace('./tmp','');
+                mockConfig.config.connectorTypes[moduleName] = path.replace('./.tmp','');
             }
 
             var doTests = function() {
@@ -214,7 +214,7 @@ describe('Controller (1)', function() {
             expect(mockConnectorFactory.init).to.not.have.been.called;
             var configFilePath = _ctrlUtil.initConfig(mockConfig.config);
             var ctrl = new Controller({
-                moduleBasePath: './tmp'
+                moduleBasePath: './.tmp'
             });
             var ret = ctrl.init(configFilePath);
 
@@ -355,9 +355,9 @@ describe('Controller (1)', function() {
             expect(ctrl.init(configFilePath)).to.be.fulfilled
                 .then(checkCallCount(1))
                 .then(ctrl.init.bind(ctrl, configFilePath))
-                .then(unexpectedSuccess, checkCallCount(1))
+                .then(unexpectedSuccess, checkCallCount(2))
                 .then(ctrl.init.bind(ctrl, configFilePath))
-                .then(unexpectedSuccess, checkCallCount(1))
+                .then(unexpectedSuccess, checkCallCount(2))
                 .then(_assertionHelper.getNotifySuccessHandler(done),
                       _assertionHelper.getNotifyFailureHandler(done));
         });

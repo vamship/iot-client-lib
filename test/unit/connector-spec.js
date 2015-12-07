@@ -37,7 +37,7 @@ describe('Connector', function() {
     describe('[static members]', function() {
         it('should expose static members for each of the standard events supported', function() {
             expect(Connector).to.have.property('DATA_EVENT').and.to.be.a('string').and.to.not.be.empty;
-            expect(Connector).to.have.property('ERROR_EVENT').and.to.be.a('string').and.to.not.be.empty;
+            expect(Connector).to.have.property('LOG_EVENT').and.to.be.a('string').and.to.not.be.empty;
         });
     });
 
@@ -71,6 +71,7 @@ describe('Connector', function() {
             expect(con).to.have.property('getId').and.to.be.a('function');
             expect(con).to.have.property('isActive').and.to.be.a('function');
             expect(con).to.have.property('addData').and.to.be.a('function');
+            expect(con).to.have.property('addLogData').and.to.be.a('function');
             expect(con).to.have.property('stop').and.to.be.a('function');
             expect(con).to.have.property('setLogger').and.to.be.a('function');
 

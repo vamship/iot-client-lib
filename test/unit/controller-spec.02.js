@@ -237,6 +237,71 @@ describe('Controller (2)', function() {
             };
         }
 
+        describe('[log data]', function() {
+            function _emitLogData(connectors, eventData) {
+                return function(data) {
+                    connectors.forEach(function(connectorInfo) {
+                        connectorInfo.connector._emitLog(eventData);
+                    });
+                    return data;
+                };
+            }
+
+            it('should add data to all cloud connector log buffers when a device connector emits a log event', function(done) {
+                var mockConfig = _ctrlUtil.createConfig(1, 'resolve', 'resolve');
+                var configFilePath = _ctrlUtil.initConfig(mockConfig.config);
+                var ctrl = new Controller();
+                var connectors = _initConnectorArray(mockConfig);
+                var deviceConnectors = connectors.filter(_getConnectorFilter('device', null));
+                var cloudConnectors = connectors.filter(_getConnectorFilter('cloud', null));
+
+                var eventData = [ 'test log message' ];
+
+                var doTests = function() {
+                    cloudConnectors.forEach(function(connectorInfo) {
+                        var connector = connectorInfo.connector;
+                        connector.addData.args.forEach(function(arg) {
+                            expect(arg[0].data).to.deep.equal(eventData);
+                        });
+                    });
+                };
+
+                expect(ctrl.init(configFilePath)).to.be.fulfilled
+                    .then(_emitLogData(connectors, eventData))
+                    .then(_assertionHelper.wait(10))
+                    .then(_checkCallCount('addLogData', deviceConnectors, 0))
+                    .then(_checkCallCount('addLogData', cloudConnectors, connectors.length))
+                    .then(doTests)
+                    .then(_assertionHelper.getNotifySuccessHandler(done),
+                          _assertionHelper.getNotifyFailureHandler(done));
+            });
+
+            it('should not add log data to cloud connectors that are are not active', function(done) {
+                var mockConfig = _ctrlUtil.createConfig(1, 'resolve', 'resolve');
+                var configFilePath = _ctrlUtil.initConfig(mockConfig.config);
+                var ctrl = new Controller();
+
+                var cloud1Id = mockConfig.cloudConnectorIds[0];
+                var cloud1Connector = mockConfig.getConnectorById('cloud', cloud1Id);
+                var connectors = _initConnectorArray(mockConfig);
+                var deviceConnectors = connectors.filter(_getConnectorFilter('device', null));
+                var cloudConnectors = connectors.filter(_getConnectorFilter('cloud', cloud1Id));
+
+                var eventData = [ 'test log message' ];
+
+                expect(ctrl.init(configFilePath)).to.be.fulfilled
+                    .then(function() { ctrl._stopConnector('cloud', cloud1Id); })
+                    .then(_assertionHelper.wait(10))
+                    .then(_emitLogData(connectors, eventData))
+                    .then(_assertionHelper.wait(10))
+                    .then(_checkCallCount('addLogData', deviceConnectors, 0))
+                    .then(_checkCallCount('addLogData', cloudConnectors, connectors.length))
+                    .then(_checkCallCount('addLogData', [{ connector: cloud1Connector} ], 0))
+                    .then(_assertionHelper.getNotifySuccessHandler(done),
+                          _assertionHelper.getNotifyFailureHandler(done));
+            });
+        });
+
         describe('[device -> cloud (data)]', function() {
             function _emitDeviceData(connectors, eventData) {
                 return function(data) {
