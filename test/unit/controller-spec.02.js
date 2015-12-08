@@ -705,6 +705,37 @@ describe('Controller (2)', function() {
                           _assertionHelper.getNotifyFailureHandler(done));
             });
 
+            it('should start the connector if the connector has been stopped after failed consecutive starts', function(done) {
+                var mockConfig = _ctrlUtil.createConfig(1, 'resolve', 'resolve');
+                var configFilePath = _ctrlUtil.initConfig(mockConfig.config);
+                var ctrl = new Controller();
+
+                var emitterId = mockConfig.cloudConnectorIds[0];
+                var emitterConnector = mockConfig.getConnectorById('cloud', emitterId);
+                var connectors = _initConnectorArray(mockConfig, emitterId);
+
+                ctrl.__debug = true;
+
+                expect(ctrl.init(configFilePath)).to.be.fulfilled
+                    .then(_resetInitSpy(connectors))
+                    .then(_checkCallCount('init', connectors, 0))
+                    .then(_emitDataEvent(emitterConnector, STOP_CONNECTOR_ACTION, connectors))
+                    .then(_assertionHelper.wait(10))
+                    .then(_emitDataEvent(emitterConnector, START_CONNECTOR_ACTION, connectors))
+                    .then(_assertionHelper.wait(10))
+                    .then(_checkCallCount('init', connectors, 1))
+                    .then(_emitDataEvent(emitterConnector, START_CONNECTOR_ACTION, connectors))
+                    .then(_assertionHelper.wait(10))
+                    .then(_checkCallCount('init', connectors, 1))
+                    .then(_emitDataEvent(emitterConnector, STOP_CONNECTOR_ACTION, connectors))
+                    .then(_assertionHelper.wait(10))
+                    .then(_emitDataEvent(emitterConnector, START_CONNECTOR_ACTION, connectors))
+                    .then(_assertionHelper.wait(10))
+                    .then(_checkCallCount('init', connectors, 2))
+                    .then(_assertionHelper.getNotifySuccessHandler(done),
+                          _assertionHelper.getNotifyFailureHandler(done));
+            });
+
             it('should not write the configuration to the file system after command execution', function(done) {
                 var mockFs = _ctrlUtil.createMockFs();
                 Controller.__set__('_fs', mockFs);
