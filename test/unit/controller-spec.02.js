@@ -2024,7 +2024,9 @@ describe('Controller (2)', function() {
 
                 var doTests = function(data) {
                     expect(handlerSpy).to.have.been.calledOnce;
-                    expect(handlerSpy.args[0][0]).to.equal(SHUTDOWN_ACTION);
+                    var arg = handlerSpy.args[0][0];
+                    expect(arg).to.be.an('object');
+                    expect(arg.action).to.equal(SHUTDOWN_ACTION);
                     return data;
                 }
 
@@ -2133,7 +2135,9 @@ describe('Controller (2)', function() {
 
                 var doTests = function(data) {
                     expect(handlerSpy).to.have.been.calledOnce;
-                    expect(handlerSpy.args[0][0]).to.equal(UPGRADE_ACTION);
+                    var arg = handlerSpy.args[0][0];
+                    expect(arg).to.be.an('object');
+                    expect(arg.action).to.equal(UPGRADE_ACTION);
                     return data;
                 }
 
