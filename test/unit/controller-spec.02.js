@@ -42,6 +42,7 @@ describe('Controller (2)', function() {
         var STOP_ALL_CONNECTORS_ACTION = 'stop_all_connectors';
         var START_ALL_CONNECTORS_ACTION = 'start_all_connectors';
         var RESTART_ALL_CONNECTORS_ACTION = 'restart_all_connectors';
+        var LIST_CONNECTORS_ACTION = 'list_connectors';
 
         var SHUTDOWN_ACTION = 'shutdown_program';
         var UPGRADE_ACTION = 'upgrade_program';
@@ -100,10 +101,10 @@ describe('Controller (2)', function() {
             return connectors;
         }
 
-        function _resetInitSpy(connectors) {
+        function _resetCallCount(methodName, connectors) {
             return function(data) {
                 connectors.forEach(function(connectorInfo) {
-                    connectorInfo.connector.init.reset();
+                    connectorInfo.connector[methodName].reset();
                 });
                 return data;
             };
@@ -267,6 +268,7 @@ describe('Controller (2)', function() {
                 };
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
+                    .then(_resetCallCount('addLogData', connectors))
                     .then(_emitLogData(connectors, eventData))
                     .then(_assertionHelper.wait(10))
                     .then(_checkCallCount('addLogData', deviceConnectors, 0))
@@ -292,6 +294,7 @@ describe('Controller (2)', function() {
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
                     .then(function() { ctrl._stopConnector('cloud', cloud1Id); })
                     .then(_assertionHelper.wait(10))
+                    .then(_resetCallCount('addLogData', connectors))
                     .then(_emitLogData(connectors, eventData))
                     .then(_assertionHelper.wait(10))
                     .then(_checkCallCount('addLogData', deviceConnectors, 0))
@@ -387,7 +390,7 @@ describe('Controller (2)', function() {
                 var connectors = _initConnectorArray(mockConfig, emitterId);
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_emitRawData(emitterConnector, undefined))
                     .then(_assertionHelper.wait(10))
                     .then(_checkNonExecution(connectors))
@@ -443,7 +446,7 @@ describe('Controller (2)', function() {
                 payload.push(function() {});
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_emitRawData(emitterConnector, payload))
                     .then(_assertionHelper.wait(10))
                     .then(_checkNonExecution(connectors))
@@ -471,7 +474,7 @@ describe('Controller (2)', function() {
                 payload.push({ action: 'bad-action' });
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_emitRawData(emitterConnector, payload))
                     .then(_assertionHelper.wait(10))
                     .then(_checkNonExecution(connectors))
@@ -500,7 +503,7 @@ describe('Controller (2)', function() {
                 ];
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_checkCallCount('stop', connectors, 0))
                     .then(_emitDataEvent(emitterConnector, STOP_CONNECTOR_ACTION, badConnectors))
                     .then(_assertionHelper.wait(10))
@@ -528,7 +531,7 @@ describe('Controller (2)', function() {
                 });
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_checkCallCount('stop', connectors, 0))
                     .then(_emitDataEvent(emitterConnector, STOP_CONNECTOR_ACTION, badConnectors))
                     .then(_assertionHelper.wait(10))
@@ -547,7 +550,7 @@ describe('Controller (2)', function() {
                 var connectors = _initConnectorArray(mockConfig, emitterId);
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_checkCallCount('stop', connectors, 0))
                     .then(_emitDataEvent(emitterConnector, STOP_CONNECTOR_ACTION, connectors))
                     .then(_assertionHelper.wait(10))
@@ -566,7 +569,7 @@ describe('Controller (2)', function() {
                 var connectors = _initConnectorArray(mockConfig, emitterId);
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_checkCallCount('stop', connectors, 0))
                     .then(_emitDataEvent(emitterConnector, STOP_CONNECTOR_ACTION, connectors))
                     .then(_assertionHelper.wait(10))
@@ -591,7 +594,7 @@ describe('Controller (2)', function() {
                 var connectors = _initConnectorArray(mockConfig, emitterId);
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_checkConfigFileWrite(mockFs, false))
                     .then(_emitDataEvent(emitterConnector, STOP_CONNECTOR_ACTION, connectors))
                     .then(_assertionHelper.wait(10))
@@ -622,7 +625,7 @@ describe('Controller (2)', function() {
                 ];
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_checkCallCount('init', connectors, 0))
                     .then(_emitDataEvent(emitterConnector, START_CONNECTOR_ACTION, badConnectors))
                     .then(_assertionHelper.wait(10))
@@ -651,7 +654,7 @@ describe('Controller (2)', function() {
                 });
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_checkCallCount('init', connectors, 0))
                     .then(_emitDataEvent(emitterConnector, START_CONNECTOR_ACTION, badConnectors))
                     .then(_assertionHelper.wait(10))
@@ -670,7 +673,7 @@ describe('Controller (2)', function() {
                 var connectors = _initConnectorArray(mockConfig, emitterId);
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_checkCallCount('init', connectors, 0))
                     .then(_emitDataEvent(emitterConnector, STOP_CONNECTOR_ACTION, connectors))
                     .then(_assertionHelper.wait(10))
@@ -691,7 +694,7 @@ describe('Controller (2)', function() {
                 var connectors = _initConnectorArray(mockConfig, emitterId);
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_checkCallCount('init', connectors, 0))
                     .then(_emitDataEvent(emitterConnector, STOP_CONNECTOR_ACTION, connectors))
                     .then(_assertionHelper.wait(10))
@@ -717,7 +720,7 @@ describe('Controller (2)', function() {
                 ctrl.__debug = true;
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_checkCallCount('init', connectors, 0))
                     .then(_emitDataEvent(emitterConnector, STOP_CONNECTOR_ACTION, connectors))
                     .then(_assertionHelper.wait(10))
@@ -749,7 +752,7 @@ describe('Controller (2)', function() {
                 var connectors = _initConnectorArray(mockConfig, emitterId);
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_checkConfigFileWrite(mockFs, false))
                     .then(_emitDataEvent(emitterConnector, START_CONNECTOR_ACTION, connectors))
                     .then(_assertionHelper.wait(10))
@@ -779,7 +782,7 @@ describe('Controller (2)', function() {
                 ];
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_checkCallCount('stop', connectors, 0))
                     .then(_checkCallCount('init', connectors, 0))
                     .then(_emitDataEvent(emitterConnector, RESTART_CONNECTOR_ACTION, badConnectors))
@@ -809,7 +812,7 @@ describe('Controller (2)', function() {
                 });
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_checkCallCount('stop', connectors, 0))
                     .then(_checkCallCount('init', connectors, 0))
                     .then(_emitDataEvent(emitterConnector, RESTART_CONNECTOR_ACTION, badConnectors))
@@ -830,7 +833,7 @@ describe('Controller (2)', function() {
                 var connectors = _initConnectorArray(mockConfig, emitterId);
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_checkCallCount('stop', connectors, 0))
                     .then(_checkCallCount('init', connectors, 0))
                     .then(_emitDataEvent(emitterConnector, RESTART_CONNECTOR_ACTION, connectors))
@@ -854,7 +857,7 @@ describe('Controller (2)', function() {
                 var connectors = _initConnectorArray(mockConfig, emitterId);
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_checkConfigFileWrite(mockFs, false))
                     .then(_emitDataEvent(emitterConnector, RESTART_CONNECTOR_ACTION, connectors))
                     .then(_assertionHelper.wait(10))
@@ -935,6 +938,155 @@ describe('Controller (2)', function() {
             });
         });
 
+        describe('[cloud -> device (list connectors)]', function() {
+            function _checkListConnectorsResponse(cloudConnectors, requestId, expectedConnectors) {
+                return function(data) {
+                    var listResponseStart = '[info] [' + requestId + '] Listing connectors ';
+                    cloudConnectors.forEach(function(connectorInfo) {
+                        var spy = connectorInfo.connector.addLogData;
+                        var connectorCount = 0;
+                        spy.args.forEach(function(arg) {
+                            var message = arg[0].message;
+                            if(message.indexOf(listResponseStart) === 0) {
+                                var lines = message.split('\n');
+                                // One line for each connector minus the line for the heading
+                                connectorCount = lines.length - 1; 
+                                expectedConnectors.forEach(function(connector) {
+                                    var conString = _util.format('[%s::%s]', connector.category, connector.id);
+                                    var hasConnector = false;
+                                    lines.forEach(function(line) {
+                                        if(line.indexOf(conString) >= 0) {
+                                            hasConnector = true;
+                                        }
+                                    });
+                                    expect(hasConnector).to.be.true;
+                                });
+                            }
+                        });
+                        expect(connectorCount).to.equal(expectedConnectors.length);
+                    });
+                    return data;
+                };
+            }
+
+            it('should ignore list connector requests if the command has an invalid connector category', function(done) {
+                var mockConfig = _ctrlUtil.createConfig(1, 'resolve', 'resolve');
+                var configFilePath = _ctrlUtil.initConfig(mockConfig.config);
+                var ctrl = new Controller();
+
+                var requestId = 'req_1';
+                var emitterId = mockConfig.cloudConnectorIds[0];
+                var emitterConnector = mockConfig.getConnectorById('cloud', emitterId);
+                var connectors = _initConnectorArray(mockConfig, emitterId);
+                var cloudConnectors = connectors.filter(_getConnectorFilter('cloud', emitterId));
+
+                var payload = [{
+                    action: LIST_CONNECTORS_ACTION,
+                    category: 'bad-category',
+                    requestId: requestId
+                }];
+
+                expect(ctrl.init(configFilePath)).to.be.fulfilled
+                    .then(_resetCallCount('addLogData', connectors))
+                    .then(_emitRawData(emitterConnector, payload))
+                    .then(_assertionHelper.wait(10))
+                    .then(_checkListConnectorsResponse(cloudConnectors, requestId, []))
+                    .then(_assertionHelper.getNotifySuccessHandler(done),
+                          _assertionHelper.getNotifyFailureHandler(done));
+            });
+
+            it('should list all connectors when no category is specified', function(done) {
+                var mockConfig = _ctrlUtil.createConfig(1, 'resolve', 'resolve');
+                var configFilePath = _ctrlUtil.initConfig(mockConfig.config);
+                var ctrl = new Controller();
+
+                var requestId = 'req_1';
+                var emitterId = mockConfig.cloudConnectorIds[0];
+                var emitterConnector = mockConfig.getConnectorById('cloud', emitterId);
+                var connectors = _initConnectorArray(mockConfig);
+                var cloudConnectors = connectors.filter(_getConnectorFilter('cloud', emitterId));
+                var payload = [{
+                    action: LIST_CONNECTORS_ACTION,
+                    requestId: requestId
+                }];
+
+                expect(ctrl.init(configFilePath)).to.be.fulfilled
+                    .then(_resetCallCount('addLogData', connectors))
+                    .then(_emitRawData(emitterConnector, payload))
+                    .then(_assertionHelper.wait(10))
+                    .then(_checkListConnectorsResponse(cloudConnectors, requestId, connectors))
+                    .then(_assertionHelper.getNotifySuccessHandler(done),
+                          _assertionHelper.getNotifyFailureHandler(done));
+            });
+
+            it('should start only the specified category of connectors when a valid category is specified', function(done) {
+                var mockConfig = _ctrlUtil.createConfig(1, 'resolve', 'resolve');
+                var configFilePath = _ctrlUtil.initConfig(mockConfig.config);
+                var ctrl = new Controller();
+
+                var requestId = 'req_1';
+                var emitterId = mockConfig.cloudConnectorIds[0];
+                var emitterConnector = mockConfig.getConnectorById('cloud', emitterId);
+                var connectors = _initConnectorArray(mockConfig);
+
+                var devicePayload = [{
+                    action: LIST_CONNECTORS_ACTION,
+                    category: 'device',
+                    requestId: requestId
+                }];
+                var cloudPayload = [{
+                    action: LIST_CONNECTORS_ACTION,
+                    category: 'cloud',
+                    requestId: requestId
+                }];
+
+                var deviceConnectors = connectors.filter(_getConnectorFilter('device'));
+                var cloudConnectors = connectors.filter(_getConnectorFilter('cloud'));
+
+                expect(ctrl.init(configFilePath)).to.be.fulfilled
+                    .then(_resetCallCount('addLogData', connectors))
+                    .then(_emitRawData(emitterConnector, devicePayload))
+                    .then(_assertionHelper.wait(10))
+                    .then(_checkListConnectorsResponse(cloudConnectors, requestId, deviceConnectors))
+
+                    .then(_resetCallCount('addLogData', connectors))
+                    .then(_emitRawData(emitterConnector, cloudPayload))
+                    .then(_assertionHelper.wait(10))
+                    .then(_checkListConnectorsResponse(cloudConnectors, requestId, cloudConnectors))
+
+                    .then(_assertionHelper.getNotifySuccessHandler(done),
+                          _assertionHelper.getNotifyFailureHandler(done));
+            });
+
+            it('should not write the configuration to the file system after command execution', function(done) {
+                var mockFs = _ctrlUtil.createMockFs();
+                Controller.__set__('_fs', mockFs);
+
+                var mockConfig = _ctrlUtil.createConfig(1, 'resolve', 'resolve');
+                var configFilePath = _ctrlUtil.initConfig(mockConfig.config);
+                var ctrl = new Controller();
+
+                var requestId = 'req_1';
+                var emitterId = mockConfig.cloudConnectorIds[0];
+                var emitterConnector = mockConfig.getConnectorById('cloud', emitterId);
+                var connectors = _initConnectorArray(mockConfig);
+                var cloudConnectors = connectors.filter(_getConnectorFilter('cloud', emitterId));
+                var payload = [{
+                    action: LIST_CONNECTORS_ACTION,
+                    requestId: requestId
+                }];
+
+                expect(ctrl.init(configFilePath)).to.be.fulfilled
+                    .then(_resetCallCount('addLogData', connectors))
+                    .then(_emitRawData(emitterConnector, payload))
+                    .then(_assertionHelper.wait(10))
+                    .then(_checkConfigFileWrite(mockFs, false))
+                    .then(_assertionHelper.getNotifySuccessHandler(done),
+                          _assertionHelper.getNotifyFailureHandler(done));
+            });
+        });
+
+
         describe('[cloud -> device (start all connectors)]', function() {
             it('should ignore start all connector requests if the command has an invalid connector category', function(done) {
                 var mockConfig = _ctrlUtil.createConfig(1, 'resolve', 'resolve');
@@ -950,7 +1102,7 @@ describe('Controller (2)', function() {
                 }];
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_checkCallCount('init', connectors, 0))
                     .then(_emitRawData(emitterConnector, payload))
                     .then(_assertionHelper.wait(10))
@@ -973,7 +1125,7 @@ describe('Controller (2)', function() {
 
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_checkCallCount('init', connectors, 0))
                     .then(_emitDataEvent(emitterConnector, STOP_CONNECTOR_ACTION, connectors))
                     .then(_assertionHelper.wait(10))
@@ -1005,7 +1157,7 @@ describe('Controller (2)', function() {
                 var cloudConnectors = connectors.filter(_getConnectorFilter('cloud', emitterId));
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_checkCallCount('init', deviceConnectors, 0))
                     .then(_checkCallCount('init', cloudConnectors, 0))
 
@@ -1040,7 +1192,7 @@ describe('Controller (2)', function() {
                 var connectors = _initConnectorArray(mockConfig, emitterId);
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_checkConfigFileWrite(mockFs, false))
                     .then(_emitDataEvent(emitterConnector, START_ALL_CONNECTORS_ACTION, connectors))
                     .then(_assertionHelper.wait(10))
@@ -1065,7 +1217,7 @@ describe('Controller (2)', function() {
                 }];
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_checkCallCount('stop', connectors, 0))
                     .then(_emitRawData(emitterConnector, payload))
                     .then(_assertionHelper.wait(10))
@@ -1088,7 +1240,7 @@ describe('Controller (2)', function() {
 
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_checkCallCount('stop', connectors, 0))
                     .then(_emitRawData(emitterConnector, payload))
                     .then(_assertionHelper.wait(10))
@@ -1118,7 +1270,7 @@ describe('Controller (2)', function() {
                 var cloudConnectors = connectors.filter(_getConnectorFilter('cloud'));
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_checkCallCount('stop', deviceConnectors, 0))
                     .then(_checkCallCount('stop', cloudConnectors, 0))
                     .then(_emitRawData(emitterConnector, devicePayload))
@@ -1146,7 +1298,7 @@ describe('Controller (2)', function() {
                 var connectors = _initConnectorArray(mockConfig, emitterId);
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_checkConfigFileWrite(mockFs, false))
                     .then(_emitDataEvent(emitterConnector, STOP_ALL_CONNECTORS_ACTION, connectors))
                     .then(_assertionHelper.wait(10))
@@ -1171,7 +1323,7 @@ describe('Controller (2)', function() {
                 }];
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_checkCallCount('init', connectors, 0))
                     .then(_checkCallCount('stop', connectors, 0))
                     .then(_emitRawData(emitterConnector, payload))
@@ -1195,7 +1347,7 @@ describe('Controller (2)', function() {
                 }];
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_checkCallCount('init', connectors, 0))
                     .then(_checkCallCount('stop', connectors, 0))
                     .then(_emitRawData(emitterConnector, payload))
@@ -1227,7 +1379,7 @@ describe('Controller (2)', function() {
                 var cloudConnectors = connectors.filter(_getConnectorFilter('cloud'));
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_checkCallCount('stop', deviceConnectors, 0))
                     .then(_checkCallCount('init', deviceConnectors, 0))
                     .then(_checkCallCount('stop', cloudConnectors, 0))
@@ -1261,7 +1413,7 @@ describe('Controller (2)', function() {
                 var connectors = _initConnectorArray(mockConfig, emitterId);
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_checkConfigFileWrite(mockFs, false))
                     .then(_emitDataEvent(emitterConnector, RESTART_ALL_CONNECTORS_ACTION, connectors))
                     .then(_assertionHelper.wait(10))
@@ -1291,7 +1443,7 @@ describe('Controller (2)', function() {
                 ];
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_checkCallCount('addData', connectors, 0))
                     .then(_emitDataEvent(emitterConnector, SEND_DATA_ACTION, badConnectors))
                     .then(_assertionHelper.wait(10))
@@ -1319,7 +1471,7 @@ describe('Controller (2)', function() {
                 });
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_checkCallCount('addData', connectors, 0))
                     .then(_emitDataEvent(emitterConnector, SEND_DATA_ACTION, badConnectors))
                     .then(_assertionHelper.wait(10))
@@ -1338,7 +1490,7 @@ describe('Controller (2)', function() {
                 var connectors = _initConnectorArray(mockConfig, emitterId);
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_checkCallCount('addData', connectors, 0))
                     .then(_emitDataEvent(emitterConnector, SEND_DATA_ACTION, connectors))
                     .then(_assertionHelper.wait(10))
@@ -1360,7 +1512,7 @@ describe('Controller (2)', function() {
                 var connectors = _initConnectorArray(mockConfig, emitterId);
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_checkConfigFileWrite(mockFs, false))
                     .then(_emitDataEvent(emitterConnector, SEND_DATA_ACTION, connectors))
                     .then(_assertionHelper.wait(10))
@@ -1391,7 +1543,7 @@ describe('Controller (2)', function() {
                 ];
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_captureCurrentConfig(ctrl, originalConnectors))
                     .then(_emitDataEvent(emitterConnector, UPDATE_CONFIG_ACTION, badConnectors))
                     .then(_assertionHelper.wait(10))
@@ -1419,7 +1571,7 @@ describe('Controller (2)', function() {
                 });
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_captureCurrentConfig(ctrl, originalConnectors))
                     .then(_emitDataEvent(emitterConnector, UPDATE_CONFIG_ACTION, badConnectors))
                     .then(_assertionHelper.wait(10))
@@ -1438,7 +1590,7 @@ describe('Controller (2)', function() {
                 var connectors = _initConnectorArray(mockConfig, emitterId);
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_emitDataEvent(emitterConnector, UPDATE_CONFIG_ACTION, connectors))
                     .then(_assertionHelper.wait(10))
                     .then(_verifyConnectorConfig(ctrl, connectors))
@@ -1459,7 +1611,7 @@ describe('Controller (2)', function() {
                 var connectors = _initConnectorArray(mockConfig, emitterId);
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_checkConfigFileWrite(mockFs, false))
                     .then(_emitDataEvent(emitterConnector, UPDATE_CONFIG_ACTION, connectors))
                     .then(_assertionHelper.wait(10))
@@ -1490,7 +1642,7 @@ describe('Controller (2)', function() {
                 ];
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_captureCurrentConfig(ctrl, originalConnectors))
                     .then(_emitDataEvent(emitterConnector, DELETE_CONFIG_ACTION, badConnectors))
                     .then(_assertionHelper.wait(10))
@@ -1519,7 +1671,7 @@ describe('Controller (2)', function() {
                 });
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_captureCurrentConfig(ctrl, originalConnectors))
                     .then(_emitDataEvent(emitterConnector, DELETE_CONFIG_ACTION, badConnectors))
                     .then(_assertionHelper.wait(10))
@@ -1547,7 +1699,7 @@ describe('Controller (2)', function() {
                 };
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_emitDataEvent(emitterConnector, DELETE_CONFIG_ACTION, connectors))
                     .then(_assertionHelper.wait(10))
                     .then(doTests)
@@ -1568,7 +1720,7 @@ describe('Controller (2)', function() {
                 var connectors = _initConnectorArray(mockConfig, emitterId);
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_checkConfigFileWrite(mockFs, false))
                     .then(_emitDataEvent(emitterConnector, DELETE_CONFIG_ACTION, connectors))
                     .then(_assertionHelper.wait(10))
@@ -1879,7 +2031,7 @@ describe('Controller (2)', function() {
                 };
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_emitDataEvent(emitterConnector, UPDATE_CONFIG_ACTION, connectors))
                     .then(_assertionHelper.wait(10))
                     .then(doTests)
@@ -1906,7 +2058,7 @@ describe('Controller (2)', function() {
                 };
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_emitDataEvent(emitterConnector, UPDATE_CONFIG_ACTION, connectors))
                     .then(_emitDataEvent(emitterConnector, UPDATE_CONFIG_ACTION, connectors))
                     .then(_assertionHelper.wait(10))
@@ -1937,7 +2089,7 @@ describe('Controller (2)', function() {
                 };
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_emitDataEvent(emitterConnector, UPDATE_CONFIG_ACTION, connectors))
                     .then(_emitDataEvent(emitterConnector, UPDATE_CONFIG_ACTION, connectors))
                     .then(_assertionHelper.wait(10))
@@ -1965,7 +2117,7 @@ describe('Controller (2)', function() {
                 } ];
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_checkCallCount('stop', connectors, 0))
                     .then(_emitRawData(emitterConnector, payload))
                     .then(_assertionHelper.wait(10))
@@ -2051,7 +2203,7 @@ describe('Controller (2)', function() {
                 var connectors = _initConnectorArray(mockConfig, emitterId);
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_checkConfigFileWrite(mockFs, false))
                     .then(_emitDataEvent(emitterConnector, SHUTDOWN_ACTION, connectors))
                     .then(_assertionHelper.wait(10))
@@ -2076,7 +2228,7 @@ describe('Controller (2)', function() {
                 } ];
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_checkCallCount('stop', connectors, 0))
                     .then(_emitRawData(emitterConnector, payload))
                     .then(_assertionHelper.wait(10))
@@ -2162,7 +2314,7 @@ describe('Controller (2)', function() {
                 var connectors = _initConnectorArray(mockConfig, emitterId);
 
                 expect(ctrl.init(configFilePath)).to.be.fulfilled
-                    .then(_resetInitSpy(connectors))
+                    .then(_resetCallCount('init', connectors))
                     .then(_checkConfigFileWrite(mockFs, false))
                     .then(_emitDataEvent(emitterConnector, UPGRADE_ACTION, connectors))
                     .then(_assertionHelper.wait(10))
