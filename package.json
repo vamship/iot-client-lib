@@ -1,6 +1,6 @@
 {
   "name": "iot-client-lib",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Library for IOT client (gateway) devices",
   "main": "lib/index.js",
   "scripts": {
